@@ -1,3 +1,1 @@
-export default function Success() {
-  return <h1>✅ Pago completado. Gracias por tu compra!</h1>;
-}
+export default function Success() { return <div style={{padding:40, textAlign:'center'}}>Pago completado. Gracias por tu compra!</div>; }
