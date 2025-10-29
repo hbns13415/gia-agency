@@ -4,22 +4,23 @@ import { useState } from 'react'
 export default function Home() {
   const [loading, setLoading] = useState(false)
 
-  const handleCheckout = async () => {
-    try {
-      setLoading(true)
-      const res = await fetch('/api/checkout', { method: 'POST' })
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      } else {
-        alert('Error creating checkout session')
-      }
-    } catch (e) {
-      console.error(e)
-      alert('Error: ' + (e.message || e))
-      setLoading(false)
+const handleCheckout = async () => {
+  try {
+    setLoading(true);
+    const res = await fetch('/api/mp/checkout', { method: 'POST' });
+    const data = await res.json();
+    if (data.url) {
+      window.location.href = data.url; // redirección a Mercado Pago
+    } else {
+      alert('Error iniciando pago');
+      setLoading(false);
     }
+  } catch (e) {
+    console.error(e);
+    alert('Error: ' + (e.message || e));
+    setLoading(false);
   }
+}
 
   return (
     <>
