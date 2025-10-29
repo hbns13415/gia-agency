@@ -1,8 +1,9 @@
 import Stripe from 'stripe';
-import { buffer } from 'micro';
 
 export const config = {
-  api: { bodyParser: false },
+  api: {
+    bodyParser: false,
+  },
 };
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -13,22 +14,26 @@ export default async function handler(req, res) {
   }
 
   try {
-    const buf = await buffer(req);
+    const chunks = [];
+    for await (const chunk of req) {
+      chunks.push(chunk);
+    }
+    const rawBody = Buffer.concat(chunks);
     const sig = req.headers['stripe-signature'];
     const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     let event;
 
     if (endpointSecret) {
-      event = stripe.webhooks.constructEvent(buf, sig, endpointSecret);
+      event = stripe.webhooks.constructEvent(rawBody, sig, endpointSecret);
     } else {
-      event = JSON.parse(buf.toString());
+      event = JSON.parse(rawBody.toString());
     }
 
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
       console.log('✅ Pago completado (webhook):', session.id);
-      // Acá podrías agregar lógica extra: enviar email, actualizar base, etc.
+      // Acá podés disparar email, guardar en base de datos, etc.
     }
 
     res.json({ received: true });
