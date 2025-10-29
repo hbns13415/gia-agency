@@ -86,7 +86,14 @@ export default function Home() {
               <div className="gia-divider" />
 
               <h4 className="text-sm text-gray-300">Ideal para</h4>
-              <p className="text-xs text-gray-400">Emprendedores, locales y pequeños negocios que necesitan presencia profesional sin invertir horas en diseño.</p>
+              <p className="text-xs text-gray-400">
+                Emprendedores, locales y pequeños negocios que necesitan presencia profesional sin invertir horas en diseño.
+              </p>
             </div>
           </div>
         </section>
+
+      </main>
+    </>
+  )
+}
