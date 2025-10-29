@@ -1,0 +1,1 @@
+export default function Cancel() { return <div style={{padding:40, textAlign:'center'}}>Pago cancelado. Podés intentarlo nuevamente.</div>; }
