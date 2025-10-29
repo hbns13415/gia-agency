@@ -12,5 +12,10 @@
     "react": "latest",
     "react-dom": "latest",
     "stripe": "latest"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.14",
+    "postcss": "^8.4.21",
+    "tailwindcss": "^3.4.7"
   }
 }
