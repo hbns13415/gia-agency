@@ -1,1 +1,0 @@
-export default function Success() { return <div style={{padding:40, textAlign:'center'}}>Pago completado. Gracias por tu compra!</div>; }
