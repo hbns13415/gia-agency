@@ -84,14 +84,6 @@ export default function Home() {
       <canvas ref={canvasRef} className="absolute inset-0 opacity-30" />
       <main className="relative z-10 max-w-2xl w-full text-center px-6">
         <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 mb-4">
-    <div className="flex justify-center mb-4">
-  <img
-    src="/gia-logo.svg"
-    alt="GIA Logo"
-    className="w-32 md:w-40 drop-shadow-[0_0_12px_#00eaffaa] animate-pulse-slow"
-  />
-</div>
-
           GIA — Growth Intelligence Agency
         </h1>
         <p className="text-gray-300 mb-8 text-lg">
