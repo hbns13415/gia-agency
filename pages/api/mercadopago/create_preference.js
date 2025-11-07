@@ -1,5 +1,6 @@
 // pages/api/mercadopago/create_preference.js
-import mercadopago from "mercadopago";
+import pkg from "mercadopago";
+const mercadopago = pkg;
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
