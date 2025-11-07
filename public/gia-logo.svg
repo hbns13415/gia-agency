@@ -1,0 +1,22 @@
+<svg width="180" height="70" viewBox="0 0 180 70" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00eaff"/>
+      <stop offset="100%" stop-color="#007bff"/>
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <text x="5" y="50" font-family="Orbitron, sans-serif" font-size="48" font-weight="bold"
+        fill="url(#neon)" filter="url(#glow)">
+    GIA
+  </text>
+  <animateTransform attributeName="transform" attributeType="XML"
+        type="scale" values="1;1.05;1" dur="3s" repeatCount="indefinite"/>
+</svg>
