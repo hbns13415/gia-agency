@@ -7,7 +7,7 @@ export default function Home() {
   const [status, setStatus] = useState("");
   const canvasRef = useRef(null);
 
-  // 🌌 Efecto de partículas IA
+  // 🌌 Fondo animado IA
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -82,135 +82,142 @@ export default function Home() {
   return (
     <div className="relative min-h-screen flex flex-col items-center justify-center bg-[#030014] text-white overflow-hidden">
       <canvas ref={canvasRef} className="absolute inset-0 opacity-30" />
-      <main className="relative z-10 max-w-2xl w-full text-center px-6">
+      <main className="relative z-10 max-w-3xl w-full text-center px-6">
+        {/* 🔷 Logo */}
+        <div className="flex justify-center mb-4">
+          <img
+            src="/gia-logo.svg"
+            alt="GIA Logo"
+            className="w-32 md:w-40 drop-shadow-[0_0_12px_#00eaffaa] animate-pulse-slow"
+          />
+        </div>
+
+        {/* 🧠 Encabezado */}
         <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 mb-4">
           GIA — Growth Intelligence Agency
         </h1>
-        <p className="text-gray-300 mb-8 text-lg">
+        <p className="text-gray-300 mb-10 text-lg">
           Automatizá tu marketing con inteligencia artificial.  
           Generá estrategias, copys y calendarios de contenido listos para usar.
         </p>
 
-        <form
-          onSubmit={handleSubmit}
-          className="bg-[#0a0f2a]/60 border border-blue-600/50 rounded-2xl shadow-xl p-6 backdrop-blur-sm"
-        >
-          <input
-            type="text"
-            name="name"
-            placeholder="Tu nombre"
-            value={form.name}
-            onChange={handleChange}
-            required
-            className="w-full mb-4 p-3 bg-[#06081a] border border-blue-700/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <input
-            type="email"
-            name="email"
-            placeholder="Tu correo"
-            value={form.email}
-            onChange={handleChange}
-            required
-            className="w-full mb-4 p-3 bg-[#06081a] border border-blue-700/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
-          <textarea
-            name="objective"
-            placeholder="¿Cuál es tu objetivo de campaña?"
-            value={form.objective}
-            onChange={handleChange}
-            required
-            rows="4"
-            className="w-full mb-6 p-3 bg-[#06081a] border border-blue-700/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-          />
+        {/* 🚀 Beneficios */}
+        <section className="mt-10 grid md:grid-cols-3 gap-8 text-center">
+          {[
+            {
+              title: "Estrategia Inteligente",
+              desc: "GIA analiza tu objetivo y genera una estrategia completa con copys, prompts y calendario IA.",
+              icon: "🤖",
+            },
+            {
+              title: "Diseño Automático",
+              desc: "Obtené un pack editable en Canva con contenido visual optimizado para redes sociales.",
+              icon: "🎨",
+            },
+            {
+              title: "Resultados Reales",
+              desc: "Probado con emprendedores que aumentaron su alcance y ventas en menos de 7 días.",
+              icon: "📈",
+            },
+          ].map((b, i) => (
+            <div
+              key={i}
+              className="fade-in-up bg-[#0a0f2a]/60 border border-blue-700/30 p-6 rounded-2xl backdrop-blur-md shadow-md hover:shadow-blue-500/30 transition"
+            >
+              <div className="text-4xl mb-3">{b.icon}</div>
+              <h3 className="text-xl font-semibold mb-2 text-cyan-300">{b.title}</h3>
+              <p className="text-gray-400 text-sm leading-relaxed">{b.desc}</p>
+            </div>
+          ))}
+        </section>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl font-semibold text-black hover:opacity-90 transition"
+        {/* 💬 Testimonios */}
+        <section className="mt-24 text-center">
+          <h2 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+            Lo que dicen quienes ya usan GIA
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {[
+              {
+                name: "Carolina, Tienda Online",
+                text: "“GIA me dio un plan completo y el pack de Canva listo para publicar. Un antes y un después.”",
+              },
+              {
+                name: "Martín, Emprendedor Local",
+                text: "“Ahorré horas por semana. Literalmente GIA me generó 30 días de publicaciones automáticas.”",
+              },
+              {
+                name: "Lucía, Consultora",
+                text: "“El correo me llegó con todo: calendario, copys, prompts y diseño. Es como tener un equipo entero.”",
+              },
+            ].map((t, i) => (
+              <div
+                key={i}
+                className="fade-in-up bg-[#0a0f2a]/60 border border-blue-600/30 rounded-2xl p-6 text-gray-300 shadow-md hover:shadow-cyan-500/20 transition"
+              >
+                <p className="italic mb-4 text-gray-200">“{t.text}”</p>
+                <p className="text-sm text-cyan-400 font-semibold">— {t.name}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 🧩 Formulario Final */}
+        <section className="mt-28 text-center">
+          <h2 className="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+            Generá tu campaña personalizada
+          </h2>
+          <p className="text-gray-400 mb-8">
+            Completá los datos y recibí tu pack completo por correo en minutos.
+          </p>
+
+          <form
+            onSubmit={handleSubmit}
+            className="bg-[#0a0f2a]/60 border border-blue-600/50 rounded-2xl shadow-xl p-6 backdrop-blur-sm"
           >
-            {loading ? "Generando..." : "Generar mi campaña — 9 USD"}
-          </button>
-        </form>
-{/* 🚀 Beneficios */}
-<section className="mt-20 grid md:grid-cols-3 gap-8 text-center">
-  {[
-    {
-      title: "Estrategia Inteligente",
-      desc: "GIA analiza tu objetivo y genera una estrategia completa con copys, prompts y calendario IA.",
-      icon: "🤖",
-    },
-    {
-      title: "Diseño Automático",
-      desc: "Obtené un pack editable en Canva con contenido visual optimizado para redes sociales.",
-      icon: "🎨",
-    },
-    {
-      title: "Resultados Reales",
-      desc: "Probado con emprendedores que aumentaron su alcance y ventas en menos de 7 días.",
-      icon: "📈",
-    },
-  ].map((b, i) => (
-    <div
-      key={i}
-      className="bg-[#0a0f2a]/60 border border-blue-700/30 p-6 rounded-2xl backdrop-blur-md shadow-md hover:shadow-blue-500/30 transition"
-    >
-      <div className="text-4xl mb-3">{b.icon}</div>
-      <h3 className="text-xl font-semibold mb-2 text-cyan-300">{b.title}</h3>
-      <p className="text-gray-400 text-sm leading-relaxed">{b.desc}</p>
-    </div>
-  ))}
-</section>
+            <input
+              type="text"
+              name="name"
+              placeholder="Tu nombre"
+              value={form.name}
+              onChange={handleChange}
+              required
+              className="w-full mb-4 p-3 bg-[#06081a] border border-blue-700/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder="Tu correo"
+              value={form.email}
+              onChange={handleChange}
+              required
+              className="w-full mb-4 p-3 bg-[#06081a] border border-blue-700/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
+            <textarea
+              name="objective"
+              placeholder="¿Cuál es tu objetivo de campaña?"
+              value={form.objective}
+              onChange={handleChange}
+              required
+              rows="4"
+              className="w-full mb-6 p-3 bg-[#06081a] border border-blue-700/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+            />
 
-{/* 💬 Testimonios */}
-<section className="mt-24 text-center">
-  <h2 className="text-3xl font-bold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-    Lo que dicen quienes ya usan GIA
-  </h2>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl font-semibold text-black hover:opacity-90 transition"
+            >
+              {loading ? "Generando..." : "Generar mi campaña — 9 USD"}
+            </button>
+          </form>
 
-  <div className="grid md:grid-cols-3 gap-8">
-    {[
-      {
-        name: "Carolina, Dueña de tienda online",
-        text: "“No sabía cómo generar contenido. GIA me dio un plan completo y el pack de Canva listo para publicar.”",
-      },
-      {
-        name: "Martín, Emprendedor local",
-        text: "“Ahorré horas por semana. Literalmente GIA me generó 30 días de publicaciones automáticas.”",
-      },
-      {
-        name: "Lucía, Consultora independiente",
-        text: "“El correo me llegó con todo: calendario, copys, prompts y diseño. Es como tener un equipo entero.”",
-      },
-    ].map((t, i) => (
-      <div
-        key={i}
-        className="bg-[#0a0f2a]/60 border border-blue-600/30 rounded-2xl p-6 text-gray-300 shadow-md hover:shadow-cyan-500/20 transition"
-      >
-        <p className="italic mb-4 text-gray-200">“{t.text}”</p>
-        <p className="text-sm text-cyan-400 font-semibold">— {t.name}</p>
-      </div>
-    ))}
-  </div>
-
-  {/* CTA Final */}
-  <div className="mt-16">
-    <a
-      href="#"
-      onClick={(e) => {
-        e.preventDefault();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      }}
-      className="inline-block px-8 py-3 bg-gradient-to-r from-blue-500 to-cyan-400 text-black font-semibold rounded-xl hover:opacity-90 transition"
-    >
-      Quiero mi campaña IA — 9 USD
-    </a>
-  </div>
-</section>
-
-        {status && <p className="mt-6 text-blue-300 text-sm animate-pulse">{status}</p>}
+          {status && <p className="mt-6 text-blue-300 text-sm animate-pulse">{status}</p>}
+        </section>
       </main>
 
-      <footer className="relative z-10 mt-12 text-gray-500 text-sm">
+      <footer className="relative z-10 mt-16 mb-4 text-gray-500 text-sm">
         © {new Date().getFullYear()} GIA — Growth Intelligence Agency
       </footer>
     </div>
