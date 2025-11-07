@@ -1,41 +1,48 @@
 // pages/api/mercadopago/create_preference.js
-import pkg from "mercadopago";
-const mercadopago = pkg;
+import { MercadoPagoConfig, Preference } from "mercadopago";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
   try {
-    mercadopago.configure({
-      access_token: process.env.MP_ACCESS_TOKEN,
+    // Inicializar Mercado Pago con el Access Token
+    const client = new MercadoPagoConfig({
+      accessToken: process.env.MP_ACCESS_TOKEN,
     });
 
-    const { name, email, objective } = req.body;
+    // Crear la preferencia de pago
+    const preference = new Preference(client);
 
-    const preference = {
-      items: [
-        {
-          title: "Pack de Campañas GIA",
-          quantity: 1,
-          currency_id: "USD",
-          unit_price: 9,
+    const result = await preference.create({
+      body: {
+        items: [
+          {
+            title: req.body.title,
+            quantity: req.body.quantity,
+            currency_id: "ARS",
+            unit_price: req.body.price,
+          },
+        ],
+        back_urls: {
+          success: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
+          failure: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
         },
-      ],
-      payer: { name, email },
-      back_urls: {
-        success: `${process.env.NEXT_PUBLIC_URL}/success`,
-        failure: `${process.env.NEXT_PUBLIC_URL}/failure`,
+        auto_return: "approved",
       },
-      auto_return: "approved",
-      metadata: { objective },
-    };
+    });
 
-    const response = await mercadopago.preferences.create(preference);
-    return res.status(200).json({ ok: true, init_point: response.body.init_point });
+    return res.status(200).json({
+      ok: true,
+      id: result.id,
+      init_point: result.init_point,
+    });
   } catch (error) {
     console.error("MercadoPago Error:", error);
-    return res.status(500).json({ ok: false, error: error.message });
+    return res.status(500).json({
+      ok: false,
+      error: error.message || "Internal Server Error",
+    });
   }
 }
