@@ -4,6 +4,8 @@ import OpenAI from "openai";
 import JSZip from "jszip";
 import { put } from "@vercel/blob";
 import { Resend } from "resend";
+import { GoogleSpreadsheet } from "google-spreadsheet";
+import { JWT } from "google-auth-library";
 
 export const config = { api: { bodyParser: true } };
 
@@ -11,9 +13,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM = process.env.FROM_EMAIL || "GIA <onboarding@resend.dev>";
 
 const schema = z.object({
-  name: z.string().min(2, "Nombre demasiado corto"),
-  email: z.string().email("Email inválido"),
-  objective: z.string().min(10, "Contá un poco más tu objetivo"),
+  name: z.string().min(2),
+  email: z.string().email(),
+  objective: z.string().min(10),
 });
 
 const MODELS = {
@@ -28,8 +30,7 @@ function jsonGuard(prompt) {
 
 INSTRUCCIONES:
 - Respondé EXCLUSIVAMENTE en JSON VÁLIDO.
-- No agregues texto antes o después del JSON.
-- No uses backticks ni comentarios.`;
+- No agregues texto antes o después del JSON.`;
 }
 
 async function callJSON(openai, model, prompt, temperature = 0.3) {
@@ -95,59 +96,47 @@ export default async function handler(req, res) {
   const { name, email, objective } = parsed.data;
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-  const brandTitle = "GIA — Growth Intelligence Agency";
   const id = Math.random().toString(36).slice(2, 10);
   const ts = new Date().toISOString();
 
   try {
-    // Estrategia
+    // === 1️⃣ IA GIA CORE ===
     const strategy = await callJSON(openai, MODELS.STRATEGY, `
       Con el objetivo "${objective}", generá JSON:
       { "audience": "...", "tone": "...", "channels": ["Instagram","TikTok"], "goals": ["..."], "kpis": ["..."], "budget": "USD ...", "plan_30_days": ["día 1: ..."] }
     `, 0.7);
 
-    // Copys
     const copy = await callJSON(openai, MODELS.WRITER, `
       Basado en la estrategia ${JSON.stringify(strategy)}, generá JSON:
       { "posts": [ { "text": "<280 chars", "hashtags": ["#...","#..."] } x5 ] }
     `, 0.9);
 
-    // Prompts visuales
     const visuals = await callJSON(openai, MODELS.DESIGN, `
       Con estos copys ${JSON.stringify(copy)}, generá JSON:
       { "prompts": [ "estilo, colores, encuadre, elementos" x5 ] }
     `, 0.5);
 
-    // Análisis
     const analysis = await callJSON(openai, MODELS.ANALYST, `
       Analizá estrategia, copys y prompts y devolvé JSON:
       { "analysis": { "score": 0-100, "insights": ["..."], "recommendations": ["..."], "executive_summary": "5-8 líneas" } }
     `, 0.3);
 
-    // Calendario
     const posts = copy.posts || [];
     const calendar = buildCalendar(posts);
-
-    // Master JSON
+    const csv = toCSV(calendar);
     const master = {
-      id, timestamp: ts, client: { name, email },
-      objective,
-      strategy,
-      posts,
-      prompts: visuals.prompts || [],
-      analysis: analysis.analysis || {},
-      calendar,
+      id, timestamp: ts, client: { name, email }, objective,
+      strategy, posts, prompts: visuals.prompts || [],
+      analysis: analysis.analysis || {}, calendar
     };
     const masterStr = JSON.stringify(master, null, 2);
 
-    // Archivos
-    const csv = toCSV(calendar);
+    // === 2️⃣ Archivos & Blob ===
     const zip = new JSZip();
     zip.file(`campaign_${id}.json`, masterStr);
     zip.file(`calendar_${id}.csv`, csv);
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
 
-    // Subir archivos a Blob
     const opts = { access: "public", token: process.env.BLOB_READ_WRITE_TOKEN };
     const [jsonFile, csvFile, zipFile] = await Promise.all([
       put(`gia/campaign_${id}.json`, new Blob([masterStr], { type: "application/json" }), opts),
@@ -155,12 +144,31 @@ export default async function handler(req, res) {
       put(`gia/GIA_pack_${id}.zip`, new Blob([zipBuffer], { type: "application/zip" }), opts),
     ]);
 
-    // Email Resend
-    const subject = `GIA — Tu campaña está lista (#${id})`;
+    // === 3️⃣ Registro en Google Sheets ===
+    const creds = new JWT({
+      email: process.env.GOOGLE_SERVICE_EMAIL,
+      key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    });
+    const doc = new GoogleSpreadsheet(process.env.GOOGLE_SHEET_ID, creds);
+    await doc.loadInfo();
+    const sheet = doc.sheetsByIndex[0];
+    await sheet.addRow({
+      ID: id,
+      Fecha: ts,
+      Nombre: name,
+      Email: email,
+      Objetivo: objective,
+      JSON: jsonFile.url,
+      CSV: csvFile.url,
+      ZIP: zipFile.url,
+    });
+
+    // === 4️⃣ Email al cliente ===
     const html = `
       <div style="font-family:system-ui,Arial;max-width:640px;margin:auto">
         <h2 style="color:#0f172a;margin-bottom:8px">¡${name}, tu campaña de GIA está lista!</h2>
-        <p>Generamos una campaña completa lista para publicar con estrategia, copys, prompts y calendario.</p>
+        <p>Generamos una campaña completa con estrategia, copys, prompts y calendario.</p>
         <p><strong>Objetivo recibido:</strong> ${objective}</p>
         <ul>
           <li><a href="${jsonFile.url}">JSON maestro</a></li>
@@ -170,9 +178,13 @@ export default async function handler(req, res) {
         <p>Gracias por elegir <strong>GIA — Growth Intelligence Agency</strong>.</p>
       </div>
     `;
-    await resend.emails.send({ from: FROM, to: email, subject, html });
+    await resend.emails.send({
+      from: FROM,
+      to: email,
+      subject: `GIA — Tu campaña está lista (#${id})`,
+      html,
+    });
 
-    // Respuesta OK
     return res.status(200).json({
       ok: true,
       id,
