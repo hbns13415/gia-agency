@@ -204,13 +204,35 @@ export default function Home() {
               className="w-full mb-6 p-3 bg-[#06081a] border border-blue-700/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
             />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl font-semibold text-black hover:opacity-90 transition"
-            >
-              {loading ? "Generando..." : "Generar mi campaña — 9 USD"}
-            </button>
+           <button
+  type="button"
+  onClick={async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/mercadopago/create_preference", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: form.name, email: form.email }),
+      });
+      const data = await res.json();
+      if (data.init_point) {
+        window.location.href = data.init_point; // 🔗 Redirige al pago
+      } else {
+        setStatus("Error al generar link de pago.");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Error al conectar con Mercado Pago.");
+    } finally {
+      setLoading(false);
+    }
+  }}
+  disabled={loading}
+  className="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl font-semibold text-black hover:opacity-90 transition"
+>
+  {loading ? "Procesando..." : "Pagar con Mercado Pago"}
+</button>
+
           </form>
 
           {status && <p className="mt-6 text-blue-300 text-sm animate-pulse">{status}</p>}
