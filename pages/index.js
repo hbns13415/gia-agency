@@ -54,26 +54,28 @@ export default function Home() {
     return () => window.removeEventListener("resize", resize);
   }, []);
 
-  // 🚀 Envío de formulario
+  // 🧠 Handlers
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+
+  // 🪙 Integración Mercado Pago
+  const handlePayment = async () => {
     setLoading(true);
     setStatus("");
     try {
-      const res = await fetch("/api/gia/execute", {
+      const res = await fetch("/api/mercadopago/create_preference", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ name: form.name, email: form.email }),
       });
       const data = await res.json();
-      if (data.ok) {
-        setStatus("✅ ¡Tu campaña fue enviada! Revisá tu correo para descargar los archivos.");
-        setForm({ name: "", email: "", objective: "" });
-      } else setStatus("⚠️ Ocurrió un error al procesar tu solicitud.");
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        setStatus("Error al generar link de pago.");
+      }
     } catch (err) {
       console.error(err);
-      setStatus("❌ Error de conexión con el servidor.");
+      setStatus("Error al conectar con Mercado Pago.");
     } finally {
       setLoading(false);
     }
@@ -159,89 +161,3 @@ export default function Home() {
                 <p className="italic mb-4 text-gray-200">“{t.text}”</p>
                 <p className="text-sm text-cyan-400 font-semibold">— {t.name}</p>
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 🧩 Formulario Final */}
-        <section className="mt-28 text-center">
-          <h2 className="text-2xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-            Generá tu campaña personalizada
-          </h2>
-          <p className="text-gray-400 mb-8">
-            Completá los datos y recibí tu pack completo por correo en minutos.
-          </p>
-
-          <form
-            onSubmit={handleSubmit}
-            className="bg-[#0a0f2a]/60 border border-blue-600/50 rounded-2xl shadow-xl p-6 backdrop-blur-sm"
-          >
-            <input
-              type="text"
-              name="name"
-              placeholder="Tu nombre"
-              value={form.name}
-              onChange={handleChange}
-              required
-              className="w-full mb-4 p-3 bg-[#06081a] border border-blue-700/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <input
-              type="email"
-              name="email"
-              placeholder="Tu correo"
-              value={form.email}
-              onChange={handleChange}
-              required
-              className="w-full mb-4 p-3 bg-[#06081a] border border-blue-700/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-            <textarea
-              name="objective"
-              placeholder="¿Cuál es tu objetivo de campaña?"
-              value={form.objective}
-              onChange={handleChange}
-              required
-              rows="4"
-              className="w-full mb-6 p-3 bg-[#06081a] border border-blue-700/40 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-
-           <button
-  type="button"
-  onClick={async () => {
-    setLoading(true);
-    try {
-      const res = await fetch("/api/mercadopago/create_preference", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: form.name, email: form.email }),
-      });
-      const data = await res.json();
-      if (data.init_point) {
-        window.location.href = data.init_point; // 🔗 Redirige al pago
-      } else {
-        setStatus("Error al generar link de pago.");
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus("Error al conectar con Mercado Pago.");
-    } finally {
-      setLoading(false);
-    }
-  }}
-  disabled={loading}
-  className="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-xl font-semibold text-black hover:opacity-90 transition"
->
-  {loading ? "Procesando..." : "Pagar con Mercado Pago"}
-</button>
-
-          </form>
-
-          {status && <p className="mt-6 text-blue-300 text-sm animate-pulse">{status}</p>}
-        </section>
-      </main>
-
-      <footer className="relative z-10 mt-16 mb-4 text-gray-500 text-sm">
-        © {new Date().getFullYear()} GIA — Growth Intelligence Agency
-      </footer>
-    </div>
-  );
-}
