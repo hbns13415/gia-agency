@@ -83,57 +83,57 @@ export default function Home() {
     <div className="relative min-h-screen flex flex-col items-center justify-center bg-[#030014] text-white overflow-hidden">
       <canvas ref={canvasRef} className="absolute inset-0 opacity-30" />
       <main className="relative z-10 max-w-2xl w-full text-center px-6">
-        
         {/* 🧠 Título principal */}
         <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 mb-4">
           GIA — Growth Intelligence Agency
         </h1>
-
         <p className="text-gray-300 mb-8 text-lg">
-          Automatizá tu marketing con inteligencia artificial.  
-          Generá estrategias, posteos listos para publicarse y calendarios de contenido.
+          Generá campañas de marketing automatizadas con inteligencia artificial.  
+          Estrategias, copys, prompts y calendarios listos en minutos.
         </p>
 
-        {/* 🎬 Video explicativo */}
-        <section className="relative w-full flex flex-col items-center my-10">
-          <h2 className="text-2xl md:text-3xl font-bold text-cyan-300 mb-4">
-            🎬 Conocé GIA en acción
-          </h2>
-          <video
-            src="/videos/gia-promo.mp4"
-            controls
-            muted
-            playsInline
-            preload="metadata"
-            className="rounded-2xl shadow-lg w-full max-w-3xl border border-cyan-400/20 cursor-pointer"
-          >
-            Tu navegador no soporta video.
-          </video>
-        </section>
-
-        {/* 💡 Por qué elegir GIA */}
-        <section className="mt-12 text-gray-300">
-          <h3 className="text-2xl font-semibold text-cyan-400 mb-4">¿Por qué elegir GIA?</h3>
-          <ul className="space-y-3 text-left">
-            <li>⚡ Estrategias automáticas adaptadas a tu negocio.</li>
-            <li>🧩 Plantillas profesionales listas para publicar.</li>
-            <li>💬 Copys optimizados por IA.</li>
-            <li>📅 Calendarios de contenido inteligentes.</li>
-          </ul>
-        </section>
+        {/* 💡 Beneficios principales */}
+        <div className="grid gap-6 md:grid-cols-3 mb-16">
+          {[
+            {
+              title: "Automatización total",
+              desc: "Creá campañas completas sin esfuerzo. GIA genera textos, prompts y calendarios en minutos.",
+              icon: "⚙️",
+            },
+            {
+              title: "Diseños profesionales",
+              desc: "Incluye plantillas editables de Canva listas para publicar en redes sociales.",
+              icon: "🎨",
+            },
+            {
+              title: "Optimización con IA",
+              desc: "Cada campaña se adapta a tu objetivo y público. Inteligencia real aplicada al marketing.",
+              icon: "🤖",
+            },
+          ].map((b, i) => (
+            <div
+              key={i}
+              className="bg-[#0a0f2a]/60 border border-blue-600/30 rounded-2xl p-6 shadow-md hover:shadow-cyan-500/20 transition"
+            >
+              <div className="text-4xl mb-3">{b.icon}</div>
+              <h3 className="text-cyan-300 text-xl font-semibold mb-2">{b.title}</h3>
+              <p className="text-gray-300 text-sm">{b.desc}</p>
+            </div>
+          ))}
+        </div>
 
         {/* 💬 Testimonios */}
-        <section className="mt-12">
-          <h3 className="text-2xl font-semibold text-cyan-400 mb-6">Opiniones reales</h3>
+        <section className="mt-8">
+          <h3 className="text-2xl font-semibold text-cyan-400 mb-6">Opiniones de nuestros usuarios</h3>
           <div className="grid gap-6 md:grid-cols-2">
             {[
               {
-                name: "Lucía, Consultora",
-                text: "El correo me llegó con todo: calendario, copys, prompts y diseño. Es como tener un equipo entero.",
+                name: "Carlos, Emprendedor",
+                text: "Ahorré horas por semana. Literalmente GIA me generó 30 días de publicaciones automáticas.",
               },
               {
-                name: "Martín, Emprendedor",
-                text: "Ahorré horas por semana. Literalmente GIA me generó 30 días de publicaciones automáticas.",
+                name: "Lucía, Consultora",
+                text: "El correo me llegó con todo: calendario, copys, prompts y diseño. Es como tener un equipo entero.",
               },
             ].map((t, i) => (
               <div
@@ -147,10 +147,24 @@ export default function Home() {
           </div>
         </section>
 
+        {/* 🎬 Video explicativo debajo de testimonios */}
+        <section className="relative w-full flex flex-col items-center my-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-cyan-300 mb-4">🎬 Conocé GIA en acción</h2>
+          <video
+            src="/videos/gia-promo.mp4"
+            controls
+            playsInline
+            preload="metadata"
+            className="rounded-2xl shadow-lg w-full max-w-3xl border border-cyan-400/20 cursor-pointer"
+          >
+            Tu navegador no soporta video.
+          </video>
+        </section>
+
         {/* 🧾 Formulario */}
         <form
           onSubmit={handleSubmit}
-          className="bg-[#0a0f2a]/60 border border-blue-600/50 rounded-2xl shadow-xl p-6 backdrop-blur-sm mt-16"
+          className="bg-[#0a0f2a]/60 border border-blue-600/50 rounded-2xl shadow-xl p-6 backdrop-blur-sm mt-10"
         >
           <input
             type="text"
