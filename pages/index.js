@@ -83,11 +83,16 @@ export default function Home() {
     <div className="relative min-h-screen flex flex-col items-center justify-center bg-[#030014] text-white overflow-hidden">
       <canvas ref={canvasRef} className="absolute inset-0 opacity-30" />
       <main className="relative z-10 max-w-2xl w-full text-center px-6">
-
+        
         {/* 🧠 Título principal */}
         <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300 mb-4">
           GIA — Growth Intelligence Agency
         </h1>
+
+        <p className="text-gray-300 mb-8 text-lg">
+          Automatizá tu marketing con inteligencia artificial.  
+          Generá estrategias, posteos listos para publicarse y calendarios de contenido.
+        </p>
 
         {/* 🎬 Video explicativo */}
         <section className="relative w-full flex flex-col items-center my-10">
@@ -97,12 +102,16 @@ export default function Home() {
           <video
             src="/videos/gia-promo.mp4"
             controls
+            muted
             playsInline
-            className="rounded-2xl shadow-lg w-full max-w-3xl border border-cyan-400/20"
-          />
+            preload="metadata"
+            className="rounded-2xl shadow-lg w-full max-w-3xl border border-cyan-400/20 cursor-pointer"
+          >
+            Tu navegador no soporta video.
+          </video>
         </section>
 
-        {/* 🧩 Por qué GIA */}
+        {/* 💡 Por qué elegir GIA */}
         <section className="mt-12 text-gray-300">
           <h3 className="text-2xl font-semibold text-cyan-400 mb-4">¿Por qué elegir GIA?</h3>
           <ul className="space-y-3 text-left">
@@ -129,7 +138,7 @@ export default function Home() {
             ].map((t, i) => (
               <div
                 key={i}
-                className="fade-in-up bg-[#0a0f2a]/60 border border-blue-600/30 rounded-2xl p-6 text-gray-300 shadow-md hover:shadow-cyan-500/20 transition"
+                className="bg-[#0a0f2a]/60 border border-blue-600/30 rounded-2xl p-6 text-gray-300 shadow-md hover:shadow-cyan-500/20 transition"
               >
                 <p className="italic mb-4 text-gray-200">“{t.text}”</p>
                 <p className="text-sm text-cyan-400 font-semibold">— {t.name}</p>
