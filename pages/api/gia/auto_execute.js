@@ -1,8 +1,9 @@
 // pages/api/gia/auto_execute.js
 import { Resend } from "resend";
+import JSZip from "jszip";
+import { put } from "@vercel/blob";
 import { GoogleSpreadsheet } from "google-spreadsheet";
 import { JWT } from "google-auth-library";
-import JSZip from "jszip";
 
 export const config = { api: { bodyParser: true } };
 
@@ -10,32 +11,27 @@ export default async function handler(req, res) {
   if (req.method !== "POST")
     return res.status(405).json({ error: "Método no permitido" });
 
-  const { name, email, objective } = req.body;
-
-  if (!email || !name)
-    return res.status(400).json({ error: "Faltan datos requeridos" });
-
   try {
-    // 🧠 1. Crear contenido base simulado
-    const campaign = {
-      id: Date.now().toString(36),
-      name,
-      email,
-      objective,
-      copy: `Estrategia generada automáticamente para ${name}.`,
-      prompt:
-        "Campaña IA generada automáticamente tras pago aprobado en Mercado Pago.",
-      date: new Date().toLocaleString("es-AR", { timeZone: "America/Argentina/Buenos_Aires" }),
-    };
+    const { name, email, objective } = req.body;
 
-    // 📁 2. Crear ZIP con contenido básico (mock)
+    // === 1️⃣ CREAR ARCHIVOS JSON / CSV / ZIP ===
+    const jsonData = { name, email, objective, generatedAt: new Date().toISOString() };
+    const csvData = `name,email,objective,generatedAt\n"${name}","${email}","${objective}","${new Date().toISOString()}"`;
+
     const zip = new JSZip();
-    zip.file("readme.txt", "Gracias por confiar en GIA. Tu pack fue generado automáticamente.");
-    zip.file("estrategia.txt", campaign.copy);
-    zip.file("prompt.txt", campaign.prompt);
-    const zipBuffer = await zip.generateAsync({ type: "base64" });
+    zip.file("campaign.json", JSON.stringify(jsonData, null, 2));
+    zip.file("calendar.csv", csvData);
+    const zipBlob = await zip.generateAsync({ type: "nodebuffer" });
 
-    // 📊 3. Guardar en Google Sheets
+    // === 2️⃣ SUBIR A VERCEL BLOB ===
+    const id = Math.random().toString(36).substring(2, 10);
+    const [jsonUpload, csvUpload, zipUpload] = await Promise.all([
+      put(`gia/campaign_${id}.json`, JSON.stringify(jsonData), { access: "public" }),
+      put(`gia/calendar_${id}.csv`, csvData, { access: "public" }),
+      put(`gia/GIA_${id}.zip`, zipBlob, { access: "public" }),
+    ]);
+
+    // === 3️⃣ REGISTRAR EN GOOGLE SHEETS ===
     const serviceAccountAuth = new JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       key: process.env.GOOGLE_PRIVATE_KEY.replace(/\\n/g, "\n"),
@@ -47,38 +43,48 @@ export default async function handler(req, res) {
     const sheet = doc.sheetsByIndex[0];
 
     await sheet.addRow({
-      Fecha: campaign.date,
-      Nombre: campaign.name,
-      Email: campaign.email,
-      Objetivo: campaign.objective,
-      Campaña_ID: campaign.id,
-      Estado: "Generada automáticamente",
+      Timestamp: new Date().toLocaleString("es-AR"),
+      Name: name,
+      Email: email,
+      Objective: objective,
+      ID: id,
+      JSON_Link: jsonUpload.url,
+      CSV_Link: csvUpload.url,
+      ZIP_Link: zipUpload.url,
     });
 
-    // 📧 4. Enviar correo con link de descarga
+    // === 4️⃣ ENVIAR CORREO CON RESEND ===
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
       from: "GIA <onboarding@resend.dev>",
       to: email,
-      subject: "🚀 Tu campaña GIA fue generada automáticamente",
+      subject: "🚀 Tu campaña GIA fue generada",
       html: `
-        <h2>¡Hola ${name}!</h2>
-        <p>Tu campaña fue creada automáticamente tras tu compra.</p>
-        <p><b>Objetivo:</b> ${objective}</p>
-        <p>Podés descargar tus archivos generados aquí:</p>
-        <a href="data:application/zip;base64,${zipBuffer}" download="GIA_Pack.zip"
-          style="display:inline-block;padding:12px 18px;background:#0066ff;color:white;border-radius:8px;text-decoration:none;">
-          Descargar Pack
-        </a>
-        <p>Gracias por confiar en GIA 🚀</p>
+        <div style="font-family:Arial,sans-serif;padding:20px;background:#0a0f2a;color:#fff">
+          <h2>✨ Hola ${name}, tu campaña GIA está lista</h2>
+          <p>Podés descargar tus archivos generados automáticamente:</p>
+          <ul>
+            <li><a href="${jsonUpload.url}" style="color:#00ffff">📄 JSON</a></li>
+            <li><a href="${csvUpload.url}" style="color:#00ffff">📊 CSV</a></li>
+            <li><a href="${zipUpload.url}" style="color:#00ffff">🗂️ ZIP completo</a></li>
+          </ul>
+          <p>Gracias por usar <b>GIA — Growth Intelligence Agency</b>.</p>
+        </div>
       `,
     });
 
-    console.log("📩 Correo enviado correctamente a:", email);
-
-    res.status(200).json({ ok: true, campaign });
-  } catch (error) {
-    console.error("❌ Error en auto_execute:", error);
-    res.status(500).json({ error: "Fallo al generar la campaña automática." });
+    // === 5️⃣ RESPUESTA ===
+    return res.status(200).json({
+      ok: true,
+      id,
+      links: {
+        json: jsonUpload.url,
+        csv: csvUpload.url,
+        zip: zipUpload.url,
+      },
+    });
+  } catch (err) {
+    console.error("❌ Error en auto_execute:", err);
+    return res.status(500).json({ ok: false, error: err.message });
   }
 }
