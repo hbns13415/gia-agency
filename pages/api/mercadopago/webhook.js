@@ -7,18 +7,23 @@ mercadopago.configure({
 
 export const config = {
   api: {
-    bodyParser: false, // necesario para MercadoPago
+    bodyParser: false, // Mercado Pago requiere leer el cuerpo crudo
   },
 };
 
 export default async function handler(req, res) {
-  // ✅ aceptar solo POST
+  // ✅ permitir GET (verificación) y POST (notificación real)
+  if (req.method === "GET") {
+    console.log("🌐 Verificación webhook OK");
+    return res.status(200).json({ ok: true, message: "Webhook verificado correctamente" });
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
-    // ✅ leer el cuerpo correctamente (MP lo envía como x-www-form-urlencoded)
+    // 🔹 leer cuerpo sin bodyParser
     const buffer = await new Promise((resolve) => {
       let data = "";
       req.on("data", (chunk) => (data += chunk));
@@ -43,7 +48,7 @@ export default async function handler(req, res) {
         const metadata = payment.body.metadata || {};
         const { name, email, objective } = metadata;
 
-        // Ejecutar la automatización de GIA
+        // 🔁 ejecutar GIA automáticamente
         const exec = await fetch(`${process.env.BASE_URL}/api/gia/auto_execute`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
