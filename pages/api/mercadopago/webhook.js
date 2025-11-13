@@ -7,62 +7,64 @@ mercadopago.configure({
 
 export const config = {
   api: {
-    bodyParser: false, // Mercado Pago requiere leer el cuerpo crudo
+    bodyParser: false, // importante para recibir correctamente la data cruda
   },
 };
 
 export default async function handler(req, res) {
-  // ✅ permitir GET (verificación) y POST (notificación real)
-  if (req.method === "GET") {
-    console.log("🌐 Verificación webhook OK");
-    return res.status(200).json({ ok: true, message: "Webhook verificado correctamente" });
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
-  }
-
   try {
-    // 🔹 leer cuerpo sin bodyParser
-    const buffer = await new Promise((resolve) => {
-      let data = "";
-      req.on("data", (chunk) => (data += chunk));
-      req.on("end", () => resolve(data));
-    });
-
-    let body = {};
-    try {
-      body = JSON.parse(buffer);
-    } catch {
-      const params = new URLSearchParams(buffer);
-      body = Object.fromEntries(params);
+    // ✅ permitir GET (verificación de conexión)
+    if (req.method === "GET") {
+      console.log("🔗 Webhook verificado correctamente (GET)");
+      return res.status(200).send("OK");
     }
 
-    console.log("📩 Webhook recibido:", body);
+    // ✅ permitir POST (notificación de pago)
+    if (req.method === "POST") {
+      let rawBody = "";
+      req.on("data", (chunk) => (rawBody += chunk));
+      await new Promise((resolve) => req.on("end", resolve));
 
-    const { type, data } = body;
-    if (type === "payment" && data && data.id) {
-      const payment = await mercadopago.payment.findById(data.id);
-
-      if (payment.body.status === "approved") {
-        const metadata = payment.body.metadata || {};
-        const { name, email, objective } = metadata;
-
-        // 🔁 ejecutar GIA automáticamente
-        const exec = await fetch(`${process.env.BASE_URL}/api/gia/auto_execute`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, objective }),
-        });
-
-        const result = await exec.json();
-        console.log("✅ GIA ejecutado tras pago:", result);
+      let body = {};
+      try {
+        body = JSON.parse(rawBody);
+      } catch {
+        try {
+          const params = new URLSearchParams(rawBody);
+          body = Object.fromEntries(params);
+        } catch {
+          console.log("⚠️ No se pudo parsear el cuerpo, cuerpo crudo:", rawBody);
+        }
       }
+
+      console.log("📩 Webhook recibido:", body);
+
+      if (body?.type === "payment" && body?.data?.id) {
+        const payment = await mercadopago.payment.findById(body.data.id);
+
+        if (payment.body.status === "approved") {
+          const metadata = payment.body.metadata || {};
+          const { name, email, objective } = metadata;
+
+          // Ejecutar GIA automáticamente
+          const exec = await fetch(`${process.env.BASE_URL}/api/gia/auto_execute`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, objective }),
+          });
+
+          const result = await exec.json();
+          console.log("✅ GIA ejecutado tras pago:", result);
+        }
+      }
+
+      return res.status(200).json({ ok: true });
     }
 
-    return res.status(200).json({ ok: true });
+    // ❌ cualquier otro método
+    return res.status(200).send("OK");
   } catch (error) {
-    console.error("❌ Error webhook:", error);
+    console.error("❌ Error en webhook:", error);
     return res.status(500).json({ ok: false, error: error.message });
   }
 }
