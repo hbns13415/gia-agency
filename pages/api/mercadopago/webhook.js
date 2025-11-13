@@ -7,62 +7,70 @@ mercadopago.configure({
 
 export const config = {
   api: {
-    bodyParser: false, // Mercado Pago requiere el cuerpo sin procesar
+    bodyParser: false, // importante para recibir raw body desde MP
   },
 };
 
 export default async function handler(req, res) {
   console.log("📥 Webhook recibido:", req.method);
 
-  // ✅ Mercado Pago verifica con GET
   if (req.method === "GET") {
-    console.log("🔗 Verificación GET recibida");
-    return res.status(200).send("OK");
+    console.log("🔗 Verificación GET exitosa");
+    res.status(200).send("OK");
+    return;
   }
 
-  // ✅ Mercado Pago notifica con POST
   if (req.method === "POST") {
     try {
+      // Leer cuerpo completo del request
       const chunks = [];
-      for await (const chunk of req) chunks.push(chunk);
-      const rawBody = Buffer.concat(chunks).toString("utf8");
+      req.on("data", (chunk) => chunks.push(chunk));
+      req.on("end", async () => {
+        const rawBody = Buffer.concat(chunks).toString("utf8");
 
-      let body;
-      try {
-        body = JSON.parse(rawBody);
-      } catch {
-        body = Object.fromEntries(new URLSearchParams(rawBody));
-      }
-
-      console.log("📦 Payload:", body);
-
-      if (body?.type === "payment" && body?.data?.id) {
-        const payment = await mercadopago.payment.findById(body.data.id);
-        console.log("💰 Pago encontrado:", payment.body.status);
-
-        if (payment.body.status === "approved") {
-          const metadata = payment.body.metadata || {};
-          const { name, email, objective } = metadata;
-
-          // Ejecutar GIA automáticamente
-          const exec = await fetch(`${process.env.BASE_URL}/api/gia/auto_execute`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name, email, objective }),
-          });
-
-          const result = await exec.json();
-          console.log("✅ GIA ejecutado tras pago:", result);
+        let body;
+        try {
+          body = JSON.parse(rawBody);
+        } catch {
+          body = Object.fromEntries(new URLSearchParams(rawBody));
         }
-      }
 
-      return res.status(200).json({ ok: true });
+        console.log("📦 Payload recibido:", body);
+
+        if (body?.type === "payment" && body?.data?.id) {
+          const payment = await mercadopago.payment.findById(body.data.id);
+          console.log("💰 Estado del pago:", payment.body.status);
+
+          if (payment.body.status === "approved") {
+            const metadata = payment.body.metadata || {};
+            const { name, email, objective } = metadata;
+
+            // Ejecutar automáticamente GIA
+            const exec = await fetch(`${process.env.BASE_URL}/api/gia/auto_execute`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ name, email, objective }),
+            });
+
+            const result = await exec.json();
+            console.log("✅ GIA ejecutado tras pago:", result);
+          }
+        }
+
+        res.status(200).json({ ok: true });
+      });
+
+      req.on("error", (err) => {
+        console.error("❌ Error leyendo cuerpo:", err);
+        res.status(500).json({ ok: false, error: err.message });
+      });
     } catch (error) {
-      console.error("❌ Error en webhook:", error);
-      return res.status(500).json({ ok: false, error: error.message });
+      console.error("❌ Error general en webhook:", error);
+      res.status(500).json({ ok: false, error: error.message });
     }
+    return;
   }
 
-  // ✅ Aceptar cualquier otro método y devolver OK (sin 405)
+  // Aceptar cualquier otro método sin error
   res.status(200).send("OK");
 }
