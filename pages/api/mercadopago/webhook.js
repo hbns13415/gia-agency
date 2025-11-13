@@ -7,40 +7,38 @@ mercadopago.configure({
 
 export const config = {
   api: {
-    bodyParser: false, // importante para recibir correctamente la data cruda
+    bodyParser: false, // Mercado Pago requiere el cuerpo sin procesar
   },
 };
 
 export default async function handler(req, res) {
-  try {
-    // ✅ permitir GET (verificación de conexión)
-    if (req.method === "GET") {
-      console.log("🔗 Webhook verificado correctamente (GET)");
-      return res.status(200).send("OK");
-    }
+  console.log("📥 Webhook recibido:", req.method);
 
-    // ✅ permitir POST (notificación de pago)
-    if (req.method === "POST") {
-      let rawBody = "";
-      req.on("data", (chunk) => (rawBody += chunk));
-      await new Promise((resolve) => req.on("end", resolve));
+  // ✅ Mercado Pago verifica con GET
+  if (req.method === "GET") {
+    console.log("🔗 Verificación GET recibida");
+    return res.status(200).send("OK");
+  }
 
-      let body = {};
+  // ✅ Mercado Pago notifica con POST
+  if (req.method === "POST") {
+    try {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      const rawBody = Buffer.concat(chunks).toString("utf8");
+
+      let body;
       try {
         body = JSON.parse(rawBody);
       } catch {
-        try {
-          const params = new URLSearchParams(rawBody);
-          body = Object.fromEntries(params);
-        } catch {
-          console.log("⚠️ No se pudo parsear el cuerpo, cuerpo crudo:", rawBody);
-        }
+        body = Object.fromEntries(new URLSearchParams(rawBody));
       }
 
-      console.log("📩 Webhook recibido:", body);
+      console.log("📦 Payload:", body);
 
       if (body?.type === "payment" && body?.data?.id) {
         const payment = await mercadopago.payment.findById(body.data.id);
+        console.log("💰 Pago encontrado:", payment.body.status);
 
         if (payment.body.status === "approved") {
           const metadata = payment.body.metadata || {};
@@ -59,12 +57,12 @@ export default async function handler(req, res) {
       }
 
       return res.status(200).json({ ok: true });
+    } catch (error) {
+      console.error("❌ Error en webhook:", error);
+      return res.status(500).json({ ok: false, error: error.message });
     }
-
-    // ❌ cualquier otro método
-    return res.status(200).send("OK");
-  } catch (error) {
-    console.error("❌ Error en webhook:", error);
-    return res.status(500).json({ ok: false, error: error.message });
   }
+
+  // ✅ Aceptar cualquier otro método y devolver OK (sin 405)
+  res.status(200).send("OK");
 }
