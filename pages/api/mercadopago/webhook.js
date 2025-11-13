@@ -1,6 +1,5 @@
 // pages/api/mercadopago/webhook.js
 import mercadopago from "mercadopago";
-import getRawBody from "raw-body";
 
 mercadopago.configure({
   access_token: process.env.MP_ACCESS_TOKEN,
@@ -8,33 +7,35 @@ mercadopago.configure({
 
 export const config = {
   api: {
-    bodyParser: false, // Necesario para procesar notificaciones URL-encoded
+    bodyParser: false, // necesario para MercadoPago
   },
 };
 
 export default async function handler(req, res) {
+  // ✅ aceptar solo POST
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
   try {
-    // 🔍 Obtenemos el cuerpo bruto y lo convertimos según el tipo
-    const rawBody = await getRawBody(req);
-    let body;
+    // ✅ leer el cuerpo correctamente (MP lo envía como x-www-form-urlencoded)
+    const buffer = await new Promise((resolve) => {
+      let data = "";
+      req.on("data", (chunk) => (data += chunk));
+      req.on("end", () => resolve(data));
+    });
 
+    let body = {};
     try {
-      body = JSON.parse(rawBody.toString());
+      body = JSON.parse(buffer);
     } catch {
-      // MP puede enviar x-www-form-urlencoded
-      const text = rawBody.toString();
-      body = Object.fromEntries(new URLSearchParams(text));
+      const params = new URLSearchParams(buffer);
+      body = Object.fromEntries(params);
     }
 
+    console.log("📩 Webhook recibido:", body);
+
     const { type, data } = body;
-
-    console.log("📩 Webhook recibido de MP:", body);
-
-    // Validamos que sea un pago
     if (type === "payment" && data && data.id) {
       const payment = await mercadopago.payment.findById(data.id);
 
@@ -42,7 +43,7 @@ export default async function handler(req, res) {
         const metadata = payment.body.metadata || {};
         const { name, email, objective } = metadata;
 
-        // Ejecutar GIA automáticamente
+        // Ejecutar la automatización de GIA
         const exec = await fetch(`${process.env.BASE_URL}/api/gia/auto_execute`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -54,9 +55,9 @@ export default async function handler(req, res) {
       }
     }
 
-    res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true });
   } catch (error) {
-    console.error("❌ Error webhook MP:", error);
-    res.status(500).json({ ok: false, error: error.message });
+    console.error("❌ Error webhook:", error);
+    return res.status(500).json({ ok: false, error: error.message });
   }
 }
