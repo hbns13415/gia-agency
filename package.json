@@ -20,7 +20,8 @@
     "resend": "^3.3.0",
     "stripe": "latest",
     "zod": "^3.23.8",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "raw-body": "^2.5.2"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.14",
