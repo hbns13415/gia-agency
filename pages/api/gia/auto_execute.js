@@ -58,7 +58,7 @@ export default async function handler(req, res) {
     // 📧 4. Enviar correo con link de descarga
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: "GIA <no-reply@gia.ar>",
+      from: "GIA <onboarding@resend.dev>",
       to: email,
       subject: "🚀 Tu campaña GIA fue generada automáticamente",
       html: `
