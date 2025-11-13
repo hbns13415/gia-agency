@@ -1,48 +1,42 @@
 // pages/api/mercadopago/create_preference.js
 import { MercadoPagoConfig, Preference } from "mercadopago";
 
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN,
+});
+
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, error: "Method not allowed" });
-  }
+  if (req.method !== "POST") return res.status(405).send("Method not allowed");
 
   try {
-    // Inicializar Mercado Pago con el Access Token
-    const client = new MercadoPagoConfig({
-      accessToken: process.env.MP_ACCESS_TOKEN,
-    });
+    const { title, price, quantity, name, email, objective } = req.body;
 
-    // Crear la preferencia de pago
-    const preference = new Preference(client);
+    const preferenceClient = new Preference(client);
 
-    const result = await preference.create({
+    const preference = await preferenceClient.create({
       body: {
         items: [
           {
-            title: req.body.title,
-            quantity: req.body.quantity,
+            title,
+            quantity,
             currency_id: "ARS",
-            unit_price: req.body.price,
+            unit_price: Number(price),
           },
         ],
+        metadata: { name, email, objective },
         back_urls: {
-          success: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
-          failure: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
+          success: `${process.env.BASE_URL}/success`,
+          failure: `${process.env.BASE_URL}/failure`,
+          pending: `${process.env.BASE_URL}/pending`,
         },
         auto_return: "approved",
+        notification_url: `${process.env.BASE_URL}/api/mercadopago/webhook`,
       },
     });
 
-    return res.status(200).json({
-      ok: true,
-      id: result.id,
-      init_point: result.init_point,
-    });
+    return res.status(200).json({ ok: true, id: preference.id, init_point: preference.init_point });
   } catch (error) {
-    console.error("MercadoPago Error:", error);
-    return res.status(500).json({
-      ok: false,
-      error: error.message || "Internal Server Error",
-    });
+    console.error("❌ Error creando preferencia:", error);
+    return res.status(500).json({ ok: false, error: error.message });
   }
 }
