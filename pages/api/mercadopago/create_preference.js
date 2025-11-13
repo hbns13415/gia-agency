@@ -34,7 +34,10 @@ export default async function handler(req, res) {
       },
     });
 
-    return res.status(200).json({ ok: true, id: preference.id, init_point: preference.init_point });
+    return res.status(200).json({
+      ok: true,
+      init_point: preference.init_point, // link real de pago
+    });
   } catch (error) {
     console.error("❌ Error creando preferencia:", error);
     return res.status(500).json({ ok: false, error: error.message });
