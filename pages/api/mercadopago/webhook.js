@@ -5,30 +5,37 @@ mercadopago.configure({
   access_token: process.env.MP_ACCESS_TOKEN,
 });
 
-export const config = { api: { bodyParser: false } };
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
 
 export default async function handler(req, res) {
-  try {
-    const topic = req.query.topic || req.query.type;
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method Not Allowed" });
+  }
 
-    // 🧩 Caso 1: webhook desde pago directo
-    if (topic === "payment" || topic === "merchant_order") {
-      const paymentId = req.query.id || req.query["data.id"];
-      const payment = await mercadopago.payment.findById(paymentId);
+  try {
+    const { type, data } = req.body;
+
+    // Solo procesar pagos aprobados
+    if (type === "payment" && data && data.id) {
+      const payment = await mercadopago.payment.findById(data.id);
 
       if (payment.body.status === "approved") {
         const metadata = payment.body.metadata || {};
         const { name, email, objective } = metadata;
 
-        // Ejecutar flujo GIA automático
-        const result = await fetch(`${process.env.BASE_URL}/api/gia/auto_execute`, {
+        // Ejecutar automáticamente GIA tras pago aprobado
+        const response = await fetch(`${process.env.BASE_URL}/api/gia/auto_execute`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email, objective }),
         });
 
-        const data = await result.json();
-        console.log("✅ GIA ejecutado tras pago:", data);
+        const result = await response.json();
+        console.log("✅ GIA ejecutado tras pago:", result);
       }
     }
 
