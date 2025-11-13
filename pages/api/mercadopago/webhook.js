@@ -1,5 +1,6 @@
 // pages/api/mercadopago/webhook.js
 import mercadopago from "mercadopago";
+import getRawBody from "raw-body";
 
 mercadopago.configure({
   access_token: process.env.MP_ACCESS_TOKEN,
@@ -7,7 +8,7 @@ mercadopago.configure({
 
 export const config = {
   api: {
-    bodyParser: true,
+    bodyParser: false, // Necesario para procesar notificaciones URL-encoded
   },
 };
 
@@ -17,9 +18,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { type, data } = req.body;
+    // 🔍 Obtenemos el cuerpo bruto y lo convertimos según el tipo
+    const rawBody = await getRawBody(req);
+    let body;
 
-    // Solo procesar pagos aprobados
+    try {
+      body = JSON.parse(rawBody.toString());
+    } catch {
+      // MP puede enviar x-www-form-urlencoded
+      const text = rawBody.toString();
+      body = Object.fromEntries(new URLSearchParams(text));
+    }
+
+    const { type, data } = body;
+
+    console.log("📩 Webhook recibido de MP:", body);
+
+    // Validamos que sea un pago
     if (type === "payment" && data && data.id) {
       const payment = await mercadopago.payment.findById(data.id);
 
@@ -27,14 +42,14 @@ export default async function handler(req, res) {
         const metadata = payment.body.metadata || {};
         const { name, email, objective } = metadata;
 
-        // Ejecutar automáticamente GIA tras pago aprobado
-        const response = await fetch(`${process.env.BASE_URL}/api/gia/auto_execute`, {
+        // Ejecutar GIA automáticamente
+        const exec = await fetch(`${process.env.BASE_URL}/api/gia/auto_execute`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name, email, objective }),
         });
 
-        const result = await response.json();
+        const result = await exec.json();
         console.log("✅ GIA ejecutado tras pago:", result);
       }
     }
