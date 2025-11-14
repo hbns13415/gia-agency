@@ -1,50 +1,44 @@
 // pages/api/mercadopago/webhook.js
-import mercadopago from "mercadopago";
+import MercadoPagoConfig, { Payment } from "mercadopago";
 
-mercadopago.configure({
-  access_token: process.env.MP_ACCESS_TOKEN, // SANDBOX
-});
+export const config = {
+  api: { bodyParser: false }
+};
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ ok: false });
   }
 
   try {
-    console.log("📩 Webhook recibido:", req.body);
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const rawBody = Buffer.concat(chunks).toString("utf8");
+    const event = JSON.parse(rawBody);
 
-    const { type, data } = req.body;
+    console.log("🔔 Webhook recibido:", event);
 
-    if (type !== "payment" || !data?.id) {
-      return res.status(200).json({ ok: true, msg: "Evento ignorado" });
+    if (event.type !== "payment") {
+      return res.status(200).json({ ok: true, msg: "Ignored" });
     }
 
-    // Obtener pago sandbox
-    const payment = await mercadopago.payment.findById(data.id);
+    const paymentId = event.data.id;
 
-    console.log("🧩 Pago encontrado:", payment.body);
+    const client = new MercadoPagoConfig({
+      accessToken: process.env.MP_ACCESS_TOKEN
+    });
 
-    // Si está aprobado → ejecutar campaña
-    if (payment.body.status === "approved") {
-      console.log("🎉 Pago aprobado → Ejecutando campaña…");
+    const payment = new Payment(client);
+    const info = await payment.get({ id: paymentId });
 
-      await fetch(
-        "https://gia-agency.vercel.app/api/gia/execute",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: payment.body.payer?.first_name || "Cliente",
-            email: payment.body.payer?.email,
-            objective: "Objetivo cargado automáticamente (sandbox)",
-          }),
-        }
-      );
-    }
+    console.log("💰 Pago verificado:", info);
+
+    // acá puedes ejecutar flujo GIA, enviar email, Google Sheets, etc.
 
     return res.status(200).json({ ok: true });
+
   } catch (err) {
     console.error("❌ Error en webhook:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ ok: false });
   }
 }
