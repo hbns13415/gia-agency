@@ -1,44 +1,54 @@
 // pages/api/mercadopago/create_preference.js
-import mercadopago from "mercadopago";
+import MercadoPagoConfig, { Preference } from "mercadopago";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
   try {
-    mercadopago.configure({
-      access_token: process.env.MP_ACCESS_TOKEN, // SANDBOX
+    const { email, name, objective } = req.body;
+    if (!email || !name || !objective) {
+      return res.status(400).json({ ok: false, error: "Missing fields" });
+    }
+
+    const client = new MercadoPagoConfig({
+      accessToken: process.env.MP_ACCESS_TOKEN,  // Modo test o prod
+      options: { timeout: 5000 }
     });
 
-    const preference = await mercadopago.preferences.create({
-      items: [
-        {
-          title: "Campaña GIA — 29.000 ARS (sandbox)",
-          quantity: 1,
-          currency_id: "ARS",
-          unit_price: 29000,
-        },
-      ],
-      back_urls: {
-        success: "https://gia-agency.vercel.app/success",
-        failure: "https://gia-agency.vercel.app/error",
-        pending: "https://gia-agency.vercel.app/pending",
-      },
-      auto_return: "approved",
+    const preference = new Preference(client);
 
-      // MUY IMPORTANTE PARA SANDBOX
-      notification_url:
-        "https://gia-agency.vercel.app/api/mercadopago/webhook",
-      binary_mode: true,
+    const result = await preference.create({
+      body: {
+        payer: { email },
+        items: [
+          {
+            title: "Campaña personalizada GIA",
+            quantity: 1,
+            unit_price: 29000,
+            currency_id: "ARS",
+          },
+        ],
+        back_urls: {
+          success: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
+          failure: `${process.env.NEXT_PUBLIC_BASE_URL}/failure`,
+          pending: `${process.env.NEXT_PUBLIC_BASE_URL}/pending`
+        },
+        auto_return: "approved",
+        notification_url: `${process.env.NEXT_PUBLIC_BASE_URL}/api/mercadopago/webhook`,
+        metadata: { email, name, objective }
+      }
     });
 
     return res.status(200).json({
       ok: true,
-      init_point: preference.body.sandbox_init_point, // SANDBOX URL
+      init_point: result.init_point,
+      id: result.id
     });
-  } catch (err) {
-    console.error("MP Error:", err);
-    return res.status(500).json({ ok: false, error: err.message });
+
+  } catch (error) {
+    console.error("MP Error:", error);
+    return res.status(500).json({ ok: false, error: error.message });
   }
 }
