@@ -3,6 +3,7 @@ import { MercadoPagoConfig, Preference } from "mercadopago";
 
 const client = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN,
+  sandbox: true
 });
 
 export default async function handler(req, res) {
