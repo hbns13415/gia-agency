@@ -12,7 +12,7 @@
     "google-auth-library": "^10.5.0",
     "google-spreadsheet": "^5.0.2",
     "jszip": "^3.10.1",
-    "mercadopago": "^1.5.18",
+    "mercadopago": "1.5.18",
     "next": "latest",
     "openai": "^4.56.0",
     "react": "latest",
