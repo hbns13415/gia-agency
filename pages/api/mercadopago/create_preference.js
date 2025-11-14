@@ -1,46 +1,44 @@
 // pages/api/mercadopago/create_preference.js
-import { MercadoPagoConfig, Preference } from "mercadopago";
-
-const client = new MercadoPagoConfig({
-  accessToken: process.env.MP_ACCESS_TOKEN,
-  sandbox: true
-});
+import mercadopago from "mercadopago";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).send("Method not allowed");
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
 
   try {
-    const { title, price, quantity, name, email, objective } = req.body;
+    mercadopago.configure({
+      access_token: process.env.MP_ACCESS_TOKEN, // SANDBOX
+    });
 
-    const preferenceClient = new Preference(client);
-
-    const preference = await preferenceClient.create({
-      body: {
-        items: [
-          {
-            title,
-            quantity,
-            currency_id: "ARS",
-            unit_price: Number(price),
-          },
-        ],
-        metadata: { name, email, objective },
-        back_urls: {
-          success: `${process.env.BASE_URL}/success`,
-          failure: `${process.env.BASE_URL}/failure`,
-          pending: `${process.env.BASE_URL}/pending`,
+    const preference = await mercadopago.preferences.create({
+      items: [
+        {
+          title: "Campaña GIA — 29.000 ARS (sandbox)",
+          quantity: 1,
+          currency_id: "ARS",
+          unit_price: 29000,
         },
-        auto_return: "approved",
-        notification_url: `${process.env.BASE_URL}/api/mercadopago/webhook`,
+      ],
+      back_urls: {
+        success: "https://gia-agency.vercel.app/success",
+        failure: "https://gia-agency.vercel.app/error",
+        pending: "https://gia-agency.vercel.app/pending",
       },
+      auto_return: "approved",
+
+      // MUY IMPORTANTE PARA SANDBOX
+      notification_url:
+        "https://gia-agency.vercel.app/api/mercadopago/webhook",
+      binary_mode: true,
     });
 
     return res.status(200).json({
       ok: true,
-      init_point: preference.init_point, // link real de pago
+      init_point: preference.body.sandbox_init_point, // SANDBOX URL
     });
-  } catch (error) {
-    console.error("❌ Error creando preferencia:", error);
-    return res.status(500).json({ ok: false, error: error.message });
+  } catch (err) {
+    console.error("MP Error:", err);
+    return res.status(500).json({ ok: false, error: err.message });
   }
 }
